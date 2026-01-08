@@ -1,0 +1,12 @@
+Smart-Class-Automation-System/
+│
+├── src/
+│   └── smart_class_control.ino (or .py if Python)
+│
+├── images/
+│   └── system_setup.jpg
+│
+├── docs/
+│   └── project_overview.pdf (optional)
+│
+└── README.md
