@@ -1,24 +1,64 @@
-#define PIR_SENSOR_PIN 2      // PIR sensor input
-#define DEVICE_PIN 8          // Relay or LED output
+Description:
+An occupancy-based classroom automation system implemented in Python.
+The system controls classroom devices using PIR sensor input,
+includes auto-off delay for stability, and a manual override feature
+for real-world usability.
+"""
 
-void setup() {
-  pinMode(PIR_SENSOR_PIN, INPUT);
-  pinMode(DEVICE_PIN, OUTPUT);
+import RPi.GPIO as GPIO
+import time
 
-  Serial.begin(9600);
-  Serial.println("Smart Class Automation System Started");
-}
+# GPIO pin configuration
+PIR_SENSOR_PIN = 17
+DEVICE_PIN = 27
+MANUAL_BUTTON_PIN = 22
 
-void loop() {
-  int motionDetected = digitalRead(PIR_SENSOR_PIN);
+# Auto-off delay (seconds)
+OFF_DELAY = 10
 
-  if (motionDetected == HIGH) {
-    digitalWrite(DEVICE_PIN, HIGH);   // Turn ON device
-    Serial.println("Occupancy detected: Device ON");
-  } else {
-    digitalWrite(DEVICE_PIN, LOW);    // Turn OFF device
-    Serial.println("No occupancy: Device OFF");
-  }
+# System state variables
+last_motion_time = 0
+device_state = False
+manual_override = False
 
-  delay(500); // Stability delay
-}
+# GPIO setup
+GPIO.setmode(GPIO.BCM)
+GPIO.setup(PIR_SENSOR_PIN, GPIO.IN)
+GPIO.setup(DEVICE_PIN, GPIO.OUT)
+GPIO.setup(MANUAL_BUTTON_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+
+print("Smart Class Automation System Started")
+
+try:
+    while True:
+        current_time = time.time()
+
+        # Manual override logic
+        if GPIO.input(MANUAL_BUTTON_PIN) == GPIO.LOW:
+            manual_override = not manual_override
+            print("Manual Override:", "ON" if manual_override else "OFF")
+            time.sleep(0.3)  # debounce
+
+        # PIR sensor logic
+        if GPIO.input(PIR_SENSOR_PIN):
+            last_motion_time = current_time
+            if not manual_override:
+                device_state = True
+                print("Occupancy detected → Device ON")
+
+        # Auto-off delay logic
+        if not manual_override:
+            if device_state and (current_time - last_motion_time > OFF_DELAY):
+                device_state = False
+                print("No occupancy → Device OFF (Auto Delay)")
+
+        # Output control
+        GPIO.output(DEVICE_PIN, GPIO.HIGH if device_state else GPIO.LOW)
+
+        time.sleep(0.2)
+
+except KeyboardInterrupt:
+    print("System Stopped")
+
+finally:
+    GPIO.cleanup()
