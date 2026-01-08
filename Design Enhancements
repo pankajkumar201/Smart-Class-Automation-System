@@ -1,0 +1,4 @@
+• Implemented auto-off delay to avoid false shutdowns
+• Added manual override for user control
+• Used time-based state management instead of simple polling
+• Designed with real classroom usability in mind
